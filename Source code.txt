@@ -1,0 +1,272 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+public static class Program
+{
+  private static void Main()
+  {
+    try
+    {
+      IList<string> receivedInput = new List<string>();
+
+      using (StreamReader reader = new StreamReader(Console.OpenStandardInput()))
+      {
+        while (!reader.EndOfStream)
+        {
+          receivedInput.Add(reader.ReadLine());
+        }
+      }
+
+      var board = new GameBoard(receivedInput);
+      board.Process();
+    }
+    catch (Exception exception)
+    {
+      Console.WriteLine(exception.Message);
+    }
+  }
+  
+  // The board for "sliding block puzzle game".
+  private class GameBoard
+  {
+    private string _direction;
+    private int[,] _board = new int[4, 4];
+    
+	// Initializes a new instance of class GameBoard.
+    public GameBoard(IList<string> lines)
+    {
+      if (IsValidInput(lines))
+      {
+        _direction = lines.First();
+      }
+      
+      InitializeBoard(lines);
+    }
+    
+    // Check if input data are valid.
+    private bool IsValidInput(IList<string> lines)
+    {
+      return lines?.Any() ?? false;
+    }
+    
+    // Initialize 4x4 dimension board.
+    private void InitializeBoard(IList<string> lines)
+    {
+	  int linesWithNumbersCount = lines.Count() - 1;  // NOTE: Skip first line which contains direction
+		
+      for (int rowCount = 0, lineCount = 1; rowCount < linesWithNumbersCount; rowCount++, lineCount++)
+      {
+        // Prepare data (converted into integers) to fill the board
+        ushort[] rowValues = lines[lineCount].Split(' ').Select(number => Convert.ToUInt16(number)).ToArray();
+          
+        // Put numbers into the board
+		for (int columnCount = 0; columnCount < rowValues.Length; columnCount++)
+		{
+		  _board[rowCount, columnCount] = rowValues[columnCount];
+		}
+      }
+    }
+	
+    // Execute the business logic to merge, sort, and display the game board.
+    public void Process()
+    {
+	  int rowsCount = _board.GetLength(0);
+	  int columnsCount = _board.GetLength(1);
+      bool reversed = _direction.Equals("right") ? true :
+                      _direction.Equals("up")    ? true : false;
+      
+      if (_direction == "left" || _direction == "right")  // TODO: Better would be to introduce enums. Strategy design pattern could be also considered
+      {
+        MergeValuesHorizontally(rowsCount, columnsCount, reversed);
+      }
+      else if (_direction == "up" || _direction == "down")
+      {
+        MergeValuesVertically(rowsCount, columnsCount, reversed);
+      }
+      else
+      {
+        throw new ArgumentException($"The given direction \"{_direction}\" is not supported.", nameof(_direction));
+      }
+      
+	  PrintResults(rowsCount, columnsCount);
+    }
+    
+    #region Horizontal logic
+    // Merge numbers with the same values when located on colliding tiles.
+    private void MergeValuesHorizontally(int rowsCount, int columnsCount, bool reversed)
+    {
+      for (int row = 0; row < rowsCount; row++)
+      {
+        for (int column = 0; column < columnsCount; column++)
+		{
+		  if (column == columnsCount - 1)  // NOTE: Skip comparing last value in the row with not existing one (out of index)
+		  {
+			continue;
+		  }
+		  
+          int nextColumn = column + 1;
+		  int valueA = _board[row, column];
+		  int valueB = _board[row, nextColumn];
+          
+          if (valueA == 0 || valueB == 0)  // Swap number with 0 (to put them close together a bit faster)
+          {
+            _board[row, column] = valueB;
+            _board[row, nextColumn] = valueA;
+          }
+          
+		  if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
+		  {
+	        _board[row, column] += valueB;
+			_board[row, nextColumn] = 0;
+		  }
+		}
+        
+        ShiftValuesHorizontally(row, columnsCount, reversed);
+	  }
+	}
+    
+    // Move values closer to the grid border to eliminate trailing 0.
+    private void ShiftValuesHorizontally(int row, int columnsCount, bool reversed)
+    {
+      int counter = default;
+      
+      while (counter < columnsCount)
+      {
+        if (reversed)
+        {
+          for (int column = columnsCount - 1; column > 0; column--)
+          {
+            if (column == columnsCount + 1)  // NOTE: Skip comparing last value in the row with not existing one (out of index)
+            {
+              continue;
+            }
+
+            SwapZero(row, column, row, nextColumn: column - 1);
+          }
+        }
+        else
+        {
+          for (int column = 0; column < columnsCount; column++)
+          {
+            if (column == columnsCount - 1)  // NOTE: Skip comparing last value in the row with not existing one (out of index)
+            {
+              continue;
+            }
+
+            SwapZero(row, column, row, nextColumn: column + 1);
+          }
+        }
+          
+        counter++;
+      }
+    }
+    #endregion
+    
+    #region Vertical logic
+    // Merge numbers with the same values when located on colliding tiles.
+    private void MergeValuesVertically(int rowsCount, int columnsCount, bool reversed)
+    {
+      for (int column = 0; column < columnsCount; column++)
+      {
+        for (int row = rowsCount - 1; row > 0; row--)
+		{
+		  if (row == rowsCount + 1)  // NOTE: Skip comparing last value in the column with not existing one (out of index)
+		  {
+			continue;
+		  }
+		  
+          int nextRow = row - 1;
+		  int valueA = _board[row, column];
+		  int valueB = _board[nextRow, column];
+          
+          if (valueA == 0 || valueB == 0)  // Swap number with 0 (to put them close together a bit faster)
+          {
+            _board[row, column] = valueB;
+            _board[nextRow, column] = valueA;
+          }
+          
+		  if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
+		  {
+	        _board[nextRow, column] += valueB;
+			_board[row, column] = 0;
+		  }
+		}
+        
+        ShiftValuesVertically(column, rowsCount, reversed);
+	  }
+	}
+    
+    // Move values closer to the grid border to eliminate trailing 0.
+    private void ShiftValuesVertically(int column, int rowsCount, bool reversed)
+    {
+      int counter = default;
+      
+      while (counter < rowsCount)
+      {
+        if (reversed)
+        {
+          for (int row = 0; row < rowsCount; row++)
+          {
+            if (row == rowsCount - 1)  // NOTE: Skip comparing last value in the column with not existing one (out of index)
+            {
+              continue;
+            }
+
+            SwapZero(row, column, nextRow: row + 1, column);
+          }
+        }
+        else
+        {
+          for (int row = rowsCount - 1; row > 0; row--)
+          {
+            if (row == rowsCount + 1)  // NOTE: Skip comparing last value in the column with not existing one (out of index)
+            {
+              continue;
+            }
+
+            SwapZero(row, column, nextRow: row - 1, column);
+          }
+        }
+          
+        counter++;
+      }
+    }
+    #endregion
+    
+    // Swap number value with 0.
+    private void SwapZero(int row, int column, int nextRow, int nextColumn)
+    {
+      int valueA = _board[row, column];
+      int valueB = _board[nextRow, nextColumn];
+
+      if (valueA == 0)  // Swap number with 0
+      {
+        _board[row, column] = valueB;
+        _board[nextRow, nextColumn] = valueA;
+      }
+    }
+      
+	// Display the result matrix (board).
+	private void PrintResults(int rowsCount, int columnsCount)
+	{
+	  for (int row = 0; row < rowsCount; row++)
+	  {
+		for (int column = 0; column < columnsCount; column++)
+		{
+		  Console.Write($"{_board[row, column]}");
+          
+          if (column < columnsCount - 1)  // Skip additional space after the last number
+          {
+            Console.Write(" ");
+          }
+		}
+		
+		Console.WriteLine();
+	  }
+	}
+  }
+}
