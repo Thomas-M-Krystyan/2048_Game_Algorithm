@@ -36,7 +36,7 @@ public static class Program
     private string _direction;
     private int[,] _board = new int[4, 4];
     
-	// Initializes a new instance of class GameBoard.
+    // Initializes a new instance of class GameBoard.
     public GameBoard(IList<string> lines)
     {
       if (IsValidInput(lines))
@@ -56,26 +56,26 @@ public static class Program
     // Initialize 4x4 dimension board.
     private void InitializeBoard(IList<string> lines)
     {
-	  int linesWithNumbersCount = lines.Count() - 1;  // NOTE: Skip first line which contains direction
-		
+      int linesWithNumbersCount = lines.Count() - 1;  // NOTE: Skip first line which contains direction
+        
       for (int rowCount = 0, lineCount = 1; rowCount < linesWithNumbersCount; rowCount++, lineCount++)
       {
         // Prepare data (converted into integers) to fill the board
         ushort[] rowValues = lines[lineCount].Split(' ').Select(number => Convert.ToUInt16(number)).ToArray();
           
         // Put numbers into the board
-		for (int columnCount = 0; columnCount < rowValues.Length; columnCount++)
-		{
-		  _board[rowCount, columnCount] = rowValues[columnCount];
-		}
+        for (int columnCount = 0; columnCount < rowValues.Length; columnCount++)
+        {
+          _board[rowCount, columnCount] = rowValues[columnCount];
+        }
       }
     }
-	
+    
     // Execute the business logic to merge, sort, and display the game board.
     public void Process()
     {
-	  int rowsCount = _board.GetLength(0);
-	  int columnsCount = _board.GetLength(1);
+      int rowsCount = _board.GetLength(0);
+      int columnsCount = _board.GetLength(1);
       bool reversed = _direction.Equals("right") ? true :
                       _direction.Equals("up")    ? true : false;
       
@@ -92,7 +92,7 @@ public static class Program
         throw new ArgumentException($"The given direction \"{_direction}\" is not supported.", nameof(_direction));
       }
       
-	  PrintResults(rowsCount, columnsCount);
+      PrintResults(rowsCount, columnsCount);
     }
     
     #region Horizontal logic
@@ -102,15 +102,15 @@ public static class Program
       for (int row = 0; row < rowsCount; row++)
       {
         for (int column = 0; column < columnsCount; column++)
-		{
-		  if (column == columnsCount - 1)  // NOTE: Skip comparing last value in the row with not existing one (out of index)
-		  {
-			continue;
-		  }
-		  
+        {
+          if (column == columnsCount - 1)  // NOTE: Skip comparing last value in the row with not existing one (out of index)
+          {
+            continue;
+          }
+          
           int nextColumn = column + 1;
-		  int valueA = _board[row, column];
-		  int valueB = _board[row, nextColumn];
+          int valueA = _board[row, column];
+          int valueB = _board[row, nextColumn];
           
           if (valueA == 0 || valueB == 0)  // Swap number with 0 (to put them close together a bit faster)
           {
@@ -118,16 +118,16 @@ public static class Program
             _board[row, nextColumn] = valueA;
           }
           
-		  if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
-		  {
-	        _board[row, column] += valueB;
-			_board[row, nextColumn] = 0;
-		  }
-		}
+          if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
+          {
+            _board[row, column] += valueB;
+            _board[row, nextColumn] = 0;
+          }
+        }
         
         ShiftValuesHorizontally(row, columnsCount, reversed);
-	  }
-	}
+      }
+    }
     
     // Move values closer to the grid border to eliminate trailing 0.
     private void ShiftValuesHorizontally(int row, int columnsCount, bool reversed)
@@ -173,15 +173,15 @@ public static class Program
       for (int column = 0; column < columnsCount; column++)
       {
         for (int row = rowsCount - 1; row > 0; row--)
-		{
-		  if (row == rowsCount + 1)  // NOTE: Skip comparing last value in the column with not existing one (out of index)
-		  {
-			continue;
-		  }
-		  
+        {
+          if (row == rowsCount + 1)  // NOTE: Skip comparing last value in the column with not existing one (out of index)
+          {
+            continue;
+          }
+          
           int nextRow = row - 1;
-		  int valueA = _board[row, column];
-		  int valueB = _board[nextRow, column];
+          int valueA = _board[row, column];
+          int valueB = _board[nextRow, column];
           
           if (valueA == 0 || valueB == 0)  // Swap number with 0 (to put them close together a bit faster)
           {
@@ -189,16 +189,16 @@ public static class Program
             _board[nextRow, column] = valueA;
           }
           
-		  if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
-		  {
-	        _board[nextRow, column] += valueB;
-			_board[row, column] = 0;
-		  }
-		}
+          if (valueA == valueB)  // Merge the same values (colliding with the neighbour tiles)
+          {
+            _board[nextRow, column] += valueB;
+            _board[row, column] = 0;
+          }
+        }
         
         ShiftValuesVertically(column, rowsCount, reversed);
-	  }
-	}
+      }
+    }
     
     // Move values closer to the grid border to eliminate trailing 0.
     private void ShiftValuesVertically(int column, int rowsCount, bool reversed)
@@ -250,23 +250,23 @@ public static class Program
       }
     }
       
-	// Display the result matrix (board).
-	private void PrintResults(int rowsCount, int columnsCount)
-	{
-	  for (int row = 0; row < rowsCount; row++)
-	  {
-		for (int column = 0; column < columnsCount; column++)
-		{
-		  Console.Write($"{_board[row, column]}");
+    // Display the result matrix (board).
+    private void PrintResults(int rowsCount, int columnsCount)
+    {
+      for (int row = 0; row < rowsCount; row++)
+      {
+        for (int column = 0; column < columnsCount; column++)
+        {
+          Console.Write($"{_board[row, column]}");
           
           if (column < columnsCount - 1)  // Skip additional space after the last number
           {
             Console.Write(" ");
           }
-		}
-		
-		Console.WriteLine();
-	  }
-	}
+        }
+        
+        Console.WriteLine();
+      }
+    }
   }
 }
